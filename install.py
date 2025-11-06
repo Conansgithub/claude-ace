@@ -150,11 +150,17 @@ class ACEInstaller:
             print(f"   ℹ  Existing settings.json found")
 
             if not self.force:
-                response = input("   Merge ACE hooks into existing settings? (y/n): ")
-                if response.lower() != 'y':
-                    print("   ○ Skipped settings.json update")
-                    self.stats['skipped_files'].append('settings.json')
-                    return
+                # Check if running in non-interactive mode (piped from curl)
+                if not sys.stdin.isatty():
+                    print("   ℹ  Non-interactive mode detected: auto-approving merge")
+                    print("   💡 Use --force flag or FORCE=true to skip this message")
+                    response = 'y'
+                else:
+                    response = input("   Merge ACE hooks into existing settings? (y/n): ")
+                    if response.lower() != 'y':
+                        print("   ○ Skipped settings.json update")
+                        self.stats['skipped_files'].append('settings.json')
+                        return
 
             with open(settings_path, 'r', encoding='utf-8') as f:
                 existing_settings = json.load(f)
