@@ -125,7 +125,7 @@ def load_playbook() -> Dict[str, Any]:
         if "version" not in data:
             data["version"] = "1.0"
 
-        # Migrate old format: ensure all key points have name and score
+        # Migrate old format: ensure all key points have name, score, and status
         keypoints = []
         existing_names = set()
 
@@ -136,7 +136,8 @@ def load_playbook() -> Dict[str, Any]:
                 keypoints.append({
                     "name": name,
                     "text": item,
-                    "score": 0
+                    "score": 0,
+                    "status": "active"  # Default to active for old entries
                 })
                 existing_names.add(name)
             elif isinstance(item, dict):
@@ -145,6 +146,9 @@ def load_playbook() -> Dict[str, Any]:
                     item["name"] = generate_keypoint_name(existing_names)
                 if "score" not in item:
                     item["score"] = 0
+                if "status" not in item:
+                    # Default to active for backward compatibility
+                    item["status"] = "active"
                 if "text" not in item:
                     continue  # Skip invalid entries
                 existing_names.add(item["name"])
@@ -274,7 +278,9 @@ def update_playbook_data(playbook: Dict[str, Any],
     # This ensures archival operations are included in the main delta
     threshold = config["reflection"]["auto_cleanup_threshold"]
     for kp in playbook["key_points"]:
-        if kp.get("status") == "active" and kp.get("score", 0) <= threshold:
+        # Treat missing status as active (backward compatibility)
+        # Only skip if explicitly marked as archived
+        if kp.get("status") != "archived" and kp.get("score", 0) <= threshold:
             # Add archival to main delta (not separate delta)
             delta.remove_keypoint(
                 kp["name"],
