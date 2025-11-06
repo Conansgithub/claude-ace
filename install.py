@@ -68,7 +68,7 @@ class ACEInstaller:
         hooks_src = self.ace_core / "hooks"
         hooks_dst = self.claude_dir / "hooks"
 
-        hook_files = ["common.py", "user_prompt_inject.py", "precompact.py", "session_end.py"]
+        hook_files = ["common.py", "delta_manager.py", "user_prompt_inject.py", "precompact.py", "session_end.py"]
 
         for filename in hook_files:
             src = hooks_src / filename
@@ -107,6 +107,32 @@ class ACEInstaller:
                 print(f"   ✓ {action}: {filename}")
                 self.stats['created_files'].append(filename)
 
+    def copy_roles(self):
+        """Copy ACE role modules to project"""
+        print("\n🎭 Installing ACE roles...")
+
+        roles_src = self.ace_core / "roles"
+        roles_dst = self.claude_dir / "hooks"  # Place in hooks for easy import
+
+        role_files = [
+            "reflector.py",
+            "curator.py",
+            "feedback_environment.py"
+        ]
+
+        for filename in role_files:
+            src = roles_src / filename
+            dst = roles_dst / filename
+
+            if dst.exists() and not self.force:
+                print(f"   ○ Skipped (exists): {filename}")
+                self.stats['skipped_files'].append(filename)
+            else:
+                shutil.copy2(src, dst)
+                action = "Updated" if dst.exists() else "Created"
+                print(f"   ✓ {action}: {filename}")
+                self.stats['created_files'].append(filename)
+
     def copy_scripts(self):
         """Copy management scripts to project"""
         print("\n🛠️  Installing management scripts...")
@@ -117,7 +143,8 @@ class ACEInstaller:
         script_files = [
             "view_playbook.py",
             "cleanup_playbook.py",
-            "analyze_diagnostics.py"
+            "analyze_diagnostics.py",
+            "view_history.py"
         ]
 
         for filename in script_files:
@@ -283,6 +310,7 @@ class ACEInstaller:
             self.validate_environment()
             self.create_directory_structure()
             self.copy_hooks()
+            self.copy_roles()
             self.copy_prompts()
             self.copy_scripts()
             self.setup_settings()
