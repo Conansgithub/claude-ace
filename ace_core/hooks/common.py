@@ -265,6 +265,9 @@ def update_playbook_data(playbook: Dict[str, Any],
         "neutral": scoring["neutral_delta"]
     }
 
+    # Track score changes to calculate new scores for archival check
+    score_changes = {}
+
     for eval_item in evaluations:
         name = eval_item.get("name", "")
         rating = eval_item.get("rating", "neutral")
@@ -273,19 +276,28 @@ def update_playbook_data(playbook: Dict[str, Any],
         if name in existing_names:
             score_delta = rating_delta.get(rating, 0)
             delta.update_score(name, score_delta, rating, justification)
+            # Track the score change for archival check
+            score_changes[name] = score_delta
 
-    # Check for low-scoring key points to archive BEFORE applying delta
-    # This ensures archival operations are included in the main delta
+    # Check for low-scoring key points to archive using UPDATED scores
+    # Calculate new score = old score + score changes from this update
     threshold = config["reflection"]["auto_cleanup_threshold"]
     for kp in playbook["key_points"]:
         # Treat missing status as active (backward compatibility)
         # Only skip if explicitly marked as archived
-        if kp.get("status") != "archived" and kp.get("score", 0) <= threshold:
-            # Add archival to main delta (not separate delta)
-            delta.remove_keypoint(
-                kp["name"],
-                reason=f"Score {kp.get('score', 0)} below threshold {threshold}"
-            )
+        if kp.get("status") != "archived":
+            # Calculate new score (after applying current evaluations)
+            old_score = kp.get("score", 0)
+            score_change = score_changes.get(kp["name"], 0)
+            new_score = old_score + score_change
+
+            # Archive if new score is below threshold
+            if new_score <= threshold:
+                # Add archival to main delta (not separate delta)
+                delta.remove_keypoint(
+                    kp["name"],
+                    reason=f"Score {new_score} (was {old_score}, change {score_change:+d}) below threshold {threshold}"
+                )
 
     # Apply complete delta to playbook (includes additions, updates, and archival)
     playbook = apply_delta(playbook, delta)
