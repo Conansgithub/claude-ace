@@ -157,11 +157,11 @@ MANDATORY: Rate EACH playbook item based on this conversation:
 **Evidence Required:** Quote specific message or action
 
 **Example:**
-{
+{{
   "name": "kpt_003",
   "rating": "helpful",
   "justification": "Applied Chinese language preference from greeting; user continued in Chinese throughout conversation"
-}
+}}
 
 ### **"neutral"** - Apply when:
 • Key point was not relevant to this conversation
@@ -171,11 +171,11 @@ MANDATORY: Rate EACH playbook item based on this conversation:
 **Evidence Required:** Explain why not applicable
 
 **Example:**
-{
+{{
   "name": "kpt_005",
   "rating": "neutral",
   "justification": "Point about error handling not applicable; no errors occurred in this session"
-}
+}}
 
 ### **"harmful"** - Apply when:
 ✗ Key point was applied but led to wrong approach
@@ -186,11 +186,11 @@ MANDATORY: Rate EACH playbook item based on this conversation:
 **Evidence Required:** Describe negative outcome
 
 **Example:**
-{
+{{
   "name": "kpt_007",
   "rating": "harmful",
   "justification": "Applied assumption about file structure from kpt_007, but user's project uses different organization; led to incorrect file search"
-}
+}}
 
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -219,58 +219,58 @@ MANDATORY: Rate EACH playbook item based on this conversation:
 
 Return ONLY valid JSON. No markdown, no explanation, just JSON:
 
-{
+{{
   "new_key_points": [
-    {
+    {{
       "text": "<specific, atomic learning>",
       "atomicity_score": 0.92,
       "evidence": "<which message/action this came from>"
-    }
+    }}
   ],
   "evaluations": [
-    {
+    {{
       "name": "kpt_001",
       "rating": "helpful",
       "justification": "<specific evidence of impact in this conversation>"
-    },
-    {
+    }},
+    {{
       "name": "kpt_002",
       "rating": "neutral",
       "justification": "<reason why not applicable>"
-    }
+    }}
   ]
-}
+}}
 
 ═══════════════════════════════════════════════════════════════════════════════
 
 # ✅ COMPLETE GOOD EXAMPLE
 
-{
+{{
   "new_key_points": [
-    {
+    {{
       "text": "Use 'dotnet build <project>' instead of 'cd && dotnet build' to maintain working directory",
       "atomicity_score": 0.95,
       "evidence": "User requested build of weather_mcp project; using absolute path avoided directory changes"
-    },
-    {
+    }},
+    {{
       "text": "When user mentions ACE (Agentic Context Engineering), check for existing .claude/playbook.json configuration",
       "atomicity_score": 0.88,
       "evidence": "User asked about ACE integration; first action was to check existing .claude directory structure"
-    }
+    }}
   ],
   "evaluations": [
-    {
+    {{
       "name": "kpt_001",
       "rating": "helpful",
       "justification": "User greeted with '你好'; responded in Chinese per kpt_001, user continued entire conversation in Chinese"
-    },
-    {
+    }},
+    {{
       "name": "kpt_003",
       "rating": "neutral",
       "justification": "kpt_003 about error handling not relevant; no errors occurred in this session"
-    }
+    }}
   ]
-}
+}}
 
 ═══════════════════════════════════════════════════════════════════════════════
 
