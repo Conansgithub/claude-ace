@@ -276,8 +276,8 @@ def update_playbook_data(playbook: Dict[str, Any],
         if name in existing_names:
             score_delta = rating_delta.get(rating, 0)
             delta.update_score(name, score_delta, rating, justification)
-            # Track the score change for archival check
-            score_changes[name] = score_delta
+            # Accumulate score changes for archival check (handle multiple evaluations per keypoint)
+            score_changes[name] = score_changes.get(name, 0) + score_delta
 
     # Check for low-scoring key points to archive using UPDATED scores
     # Calculate new score = old score + score changes from this update
