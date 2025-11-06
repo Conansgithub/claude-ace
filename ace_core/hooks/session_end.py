@@ -43,8 +43,8 @@ async def main():
             "session_end_reflection"
         )
 
-        # Update playbook with results
-        playbook = update_playbook_data(playbook, extraction_result)
+        # Update playbook with results (using Delta mechanism)
+        playbook = update_playbook_data(playbook, extraction_result, source="session_end")
 
         # Save updated playbook
         save_playbook(playbook)

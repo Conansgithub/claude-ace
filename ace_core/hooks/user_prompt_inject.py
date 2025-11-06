@@ -63,6 +63,9 @@ def format_playbook(playbook: dict) -> str:
     if not key_points:
         return ""
 
+    # Filter out archived key points (only inject active ones)
+    key_points = [kp for kp in key_points if kp.get('status') != 'archived']
+
     # Filter by score if configured
     if hooks_config.get("inject_only_positive_scores", True):
         key_points = [kp for kp in key_points if kp.get('score', 0) >= 0]

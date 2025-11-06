@@ -180,35 +180,49 @@ def save_playbook(playbook: Dict[str, Any]):
 
 
 def update_playbook_data(playbook: Dict[str, Any],
-                         extraction_result: Dict[str, Any]) -> Dict[str, Any]:
+                         extraction_result: Dict[str, Any],
+                         source: str = "unknown") -> Dict[str, Any]:
     """
-    Update playbook with new key points and score adjustments.
+    Update playbook with new key points and score adjustments using Delta mechanism.
+    Implements incremental updates to prevent context collapse.
 
     Args:
         playbook: Current playbook
         extraction_result: Result from extract_keypoints with new_key_points and evaluations
+        source: Source of the update (e.g., "precompact", "session_end")
 
     Returns:
         Updated playbook
     """
+    from delta_manager import PlaybookDelta, apply_delta, PlaybookHistory
+
     config = load_config()
     scoring = config["scoring"]
 
     new_key_points = extraction_result.get("new_key_points", [])
     evaluations = extraction_result.get("evaluations", [])
 
-    existing_names = {kp["name"] for kp in playbook["key_points"]}
-    existing_texts = {kp["text"].lower().strip() for kp in playbook["key_points"]}
+    # Create delta for this update
+    delta = PlaybookDelta(source=source)
 
-    # Add new key points
+    existing_names = {kp["name"] for kp in playbook["key_points"]}
+    existing_texts = {
+        kp["text"].lower().strip(): kp["name"]
+        for kp in playbook["key_points"]
+        if kp.get("status") != "archived"  # Only check active points
+    }
+
+    # Add new key points to delta
     for item in new_key_points:
         # Support both string and dict format
         if isinstance(item, str):
             text = item
             atomicity_score = None
+            evidence = ""
         elif isinstance(item, dict):
             text = item.get("text", "")
             atomicity_score = item.get("atomicity_score")
+            evidence = item.get("evidence", "")
         else:
             continue
 
@@ -231,41 +245,49 @@ def update_playbook_data(playbook: Dict[str, Any],
         if atomicity_score is not None:
             new_kp["atomicity_score"] = atomicity_score
 
-        playbook["key_points"].append(new_kp)
-        existing_names.add(name)
-        existing_texts.add(text_lower)
+        # Store evidence if provided
+        if evidence:
+            new_kp["evidence"] = evidence
 
-    # Update scores based on evaluations
+        # Add to delta instead of directly to playbook
+        delta.add_keypoint(new_kp, reason=f"Extracted from {source}")
+        existing_names.add(name)
+        existing_texts[text_lower] = name
+
+    # Update scores based on evaluations using delta
     rating_delta = {
         "helpful": scoring["helpful_delta"],
         "harmful": scoring["harmful_delta"],
         "neutral": scoring["neutral_delta"]
     }
 
-    name_to_kp = {kp["name"]: kp for kp in playbook["key_points"]}
-
     for eval_item in evaluations:
         name = eval_item.get("name", "")
         rating = eval_item.get("rating", "neutral")
+        justification = eval_item.get("justification", "")
 
-        if name in name_to_kp:
-            delta = rating_delta.get(rating, 0)
-            name_to_kp[name]["score"] += delta
+        if name in existing_names:
+            score_delta = rating_delta.get(rating, 0)
+            delta.update_score(name, score_delta, rating, justification)
 
-            # Store evaluation history (optional)
-            if "evaluations" not in name_to_kp[name]:
-                name_to_kp[name]["evaluations"] = []
-            name_to_kp[name]["evaluations"].append({
-                "rating": rating,
-                "timestamp": datetime.now().isoformat()
-            })
+    # Apply delta to playbook
+    playbook = apply_delta(playbook, delta)
 
-    # Remove key points below threshold
+    # Archive low-scoring key points instead of deleting them
     threshold = config["reflection"]["auto_cleanup_threshold"]
-    playbook["key_points"] = [
-        kp for kp in playbook["key_points"]
-        if kp.get("score", 0) > threshold
-    ]
+    for kp in playbook["key_points"]:
+        if kp.get("status") == "active" and kp.get("score", 0) <= threshold:
+            # Create a new delta for archival
+            archive_delta = PlaybookDelta(source=f"{source}_cleanup")
+            archive_delta.remove_keypoint(
+                kp["name"],
+                reason=f"Score {kp.get('score', 0)} below threshold {threshold}"
+            )
+            playbook = apply_delta(playbook, archive_delta)
+
+    # Record delta history
+    history = PlaybookHistory(get_ace_dir())
+    history.record_delta(delta, playbook)
 
     return playbook
 
@@ -338,109 +360,71 @@ def load_transcript(transcript_path: str) -> List[Dict[str, str]]:
 
 async def extract_keypoints(messages: List[Dict[str, str]],
                            playbook: Dict[str, Any],
-                           diagnostic_name: str = "reflection") -> Dict[str, Any]:
+                           diagnostic_name: str = "reflection",
+                           feedback: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    Use Claude Agent SDK to extract key points and evaluate playbook.
+    Extract key points using separated Reflector and Curator roles.
+    Implements the ACE framework's role-based architecture.
 
     Args:
         messages: Conversation history
         playbook: Current playbook
         diagnostic_name: Name for diagnostic output file
+        feedback: Optional external feedback from environment
 
     Returns:
-        Dictionary with new_key_points and evaluations
+        Dictionary with new_key_points, evaluations, and curation details
     """
     if not SDK_AVAILABLE:
         print("Warning: Claude Agent SDK not available, skipping extraction",
               file=sys.stderr)
         return {"new_key_points": [], "evaluations": []}
 
-    # Load reflection template
-    template = load_template("reflection.txt")
-
-    # Format current playbook for prompt
-    playbook_dict = {
-        kp["name"]: kp["text"]
-        for kp in playbook.get("key_points", [])
-    }
-
-    # Create prompt
-    prompt = template.format(
-        trajectories=json.dumps(messages, indent=2, ensure_ascii=False),
-        playbook=json.dumps(playbook_dict, indent=2, ensure_ascii=False)
-    )
-
-    # Configure SDK client
-    options = ClaudeAgentOptions(
-        max_turns=1,
-        permission_mode="bypassPermissions",
-        allowed_tools=[]
-    )
-
-    response_text = ""
-    client = ClaudeSDKClient(options=options)
-
+    # Import roles (they are installed in the same directory for easy import)
     try:
-        await client.connect()
-        await client.query(prompt)
-
-        async for message in client.receive_response():
-            if isinstance(message, AssistantMessage):
-                for block in message.content:
-                    if isinstance(block, TextBlock):
-                        response_text += block.text
-    except Exception as e:
-        print(f"Error during SDK extraction: {e}", file=sys.stderr)
+        from reflector import Reflector
+        from curator import Curator
+    except ImportError as e:
+        print(f"Error: Reflector and Curator modules not found: {e}", file=sys.stderr)
+        print("Please reinstall ACE with: python install.py --force", file=sys.stderr)
         return {"new_key_points": [], "evaluations": []}
-    finally:
-        try:
-            await client.disconnect()
-        except:
-            pass
 
-    # Save diagnostic output
+    # Get templates directory
+    templates_dir = get_ace_dir().parent / "ace_core" / "prompts"
+    if not templates_dir.exists():
+        # Fallback to current .claude/prompts
+        templates_dir = get_ace_dir() / "prompts"
+
+    # Step 1: Reflector analyzes what happened
+    reflector = Reflector(templates_dir)
+    reflection_result = await reflector.analyze(messages, playbook, feedback)
+
+    # Step 2: Curator converts observations into actionable strategies
+    config = load_config()
+    curator = Curator(config)
+    curated_result = curator.curate(reflection_result, playbook)
+
+    # Diagnostic output if enabled
     if is_diagnostic_mode():
-        diagnostic_content = f"# PROMPT\n{prompt}\n\n{'=' * 80}\n\n# RESPONSE\n{response_text}\n"
-        save_diagnostic(diagnostic_content, diagnostic_name)
-
-    # Parse JSON response
-    json_text = extract_json_from_response(response_text)
-
-    try:
-        result = json.loads(json_text)
-        return {
-            "new_key_points": result.get("new_key_points", []),
-            "evaluations": result.get("evaluations", [])
+        diagnostic_data = {
+            "reflection_raw": reflection_result.get("raw_reflection", ""),
+            "observations_count": len(reflection_result.get("observations", [])),
+            "patterns_count": len(reflection_result.get("patterns", [])),
+            "evaluations_count": len(reflection_result.get("evaluations", [])),
+            "curated_accepted": len(curated_result.get("new_key_points", [])),
+            "curated_rejected": len(curated_result.get("rejected", [])),
+            "curation_summary": curator.create_learning_summary(curated_result)
         }
-    except json.JSONDecodeError as e:
-        print(f"JSON parse error: {e}", file=sys.stderr)
-        if is_diagnostic_mode():
-            save_diagnostic(f"JSON PARSE ERROR:\n{e}\n\nRAW TEXT:\n{json_text}",
-                          f"{diagnostic_name}_parse_error")
-        return {"new_key_points": [], "evaluations": []}
+        save_diagnostic(json.dumps(diagnostic_data, indent=2, ensure_ascii=False), diagnostic_name)
 
-
-def extract_json_from_response(response_text: str) -> str:
-    """
-    Extract JSON from various response formats.
-    Handles markdown code blocks and plain JSON.
-    """
-    # Try to find JSON in markdown code block
-    if "```json" in response_text:
-        start = response_text.find("```json") + 7
-        end = response_text.find("```", start)
-        if end != -1:
-            return response_text[start:end].strip()
-
-    # Try generic code block
-    if "```" in response_text:
-        start = response_text.find("```") + 3
-        end = response_text.find("```", start)
-        if end != -1:
-            return response_text[start:end].strip()
-
-    # Assume plain JSON
-    return response_text.strip()
+    # Return curated result (compatible with existing code)
+    return {
+        "new_key_points": curated_result.get("new_key_points", []),
+        "evaluations": curated_result.get("evaluations", []),
+        "rejected": curated_result.get("rejected", []),
+        "curation_summary": curated_result.get("curation_summary", {}),
+        "reflection_result": reflection_result  # Keep for debugging
+    }
 
 
 def load_template(template_name: str) -> str:
