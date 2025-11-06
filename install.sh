@@ -13,6 +13,8 @@
 #   FORCE       - Force overwrite existing files (default: false)
 #   SKIP_HOOKS  - Skip hooks configuration (default: false)
 #
+# Note: When piped from curl/wget, installer auto-approves settings.json merge
+#
 
 set -e  # Exit on error
 
