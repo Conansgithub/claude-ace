@@ -270,22 +270,21 @@ def update_playbook_data(playbook: Dict[str, Any],
             score_delta = rating_delta.get(rating, 0)
             delta.update_score(name, score_delta, rating, justification)
 
-    # Apply delta to playbook
-    playbook = apply_delta(playbook, delta)
-
-    # Archive low-scoring key points instead of deleting them
+    # Check for low-scoring key points to archive BEFORE applying delta
+    # This ensures archival operations are included in the main delta
     threshold = config["reflection"]["auto_cleanup_threshold"]
     for kp in playbook["key_points"]:
         if kp.get("status") == "active" and kp.get("score", 0) <= threshold:
-            # Create a new delta for archival
-            archive_delta = PlaybookDelta(source=f"{source}_cleanup")
-            archive_delta.remove_keypoint(
+            # Add archival to main delta (not separate delta)
+            delta.remove_keypoint(
                 kp["name"],
                 reason=f"Score {kp.get('score', 0)} below threshold {threshold}"
             )
-            playbook = apply_delta(playbook, archive_delta)
 
-    # Record delta history
+    # Apply complete delta to playbook (includes additions, updates, and archival)
+    playbook = apply_delta(playbook, delta)
+
+    # Record complete delta history (now includes archival operations)
     history = PlaybookHistory(get_ace_dir())
     history.record_delta(delta, playbook)
 
