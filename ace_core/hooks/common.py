@@ -125,7 +125,7 @@ def load_playbook() -> Dict[str, Any]:
         if "version" not in data:
             data["version"] = "1.0"
 
-        # Migrate old format: ensure all key points have name and score
+        # Migrate old format: ensure all key points have name, score, and status
         keypoints = []
         existing_names = set()
 
@@ -136,7 +136,8 @@ def load_playbook() -> Dict[str, Any]:
                 keypoints.append({
                     "name": name,
                     "text": item,
-                    "score": 0
+                    "score": 0,
+                    "status": "active"  # Default to active for old entries
                 })
                 existing_names.add(name)
             elif isinstance(item, dict):
@@ -145,6 +146,9 @@ def load_playbook() -> Dict[str, Any]:
                     item["name"] = generate_keypoint_name(existing_names)
                 if "score" not in item:
                     item["score"] = 0
+                if "status" not in item:
+                    # Default to active for backward compatibility
+                    item["status"] = "active"
                 if "text" not in item:
                     continue  # Skip invalid entries
                 existing_names.add(item["name"])
@@ -261,6 +265,9 @@ def update_playbook_data(playbook: Dict[str, Any],
         "neutral": scoring["neutral_delta"]
     }
 
+    # Track score changes to calculate new scores for archival check
+    score_changes = {}
+
     for eval_item in evaluations:
         name = eval_item.get("name", "")
         rating = eval_item.get("rating", "neutral")
@@ -269,23 +276,33 @@ def update_playbook_data(playbook: Dict[str, Any],
         if name in existing_names:
             score_delta = rating_delta.get(rating, 0)
             delta.update_score(name, score_delta, rating, justification)
+            # Accumulate score changes for archival check (handle multiple evaluations per keypoint)
+            score_changes[name] = score_changes.get(name, 0) + score_delta
 
-    # Apply delta to playbook
-    playbook = apply_delta(playbook, delta)
-
-    # Archive low-scoring key points instead of deleting them
+    # Check for low-scoring key points to archive using UPDATED scores
+    # Calculate new score = old score + score changes from this update
     threshold = config["reflection"]["auto_cleanup_threshold"]
     for kp in playbook["key_points"]:
-        if kp.get("status") == "active" and kp.get("score", 0) <= threshold:
-            # Create a new delta for archival
-            archive_delta = PlaybookDelta(source=f"{source}_cleanup")
-            archive_delta.remove_keypoint(
-                kp["name"],
-                reason=f"Score {kp.get('score', 0)} below threshold {threshold}"
-            )
-            playbook = apply_delta(playbook, archive_delta)
+        # Treat missing status as active (backward compatibility)
+        # Only skip if explicitly marked as archived
+        if kp.get("status") != "archived":
+            # Calculate new score (after applying current evaluations)
+            old_score = kp.get("score", 0)
+            score_change = score_changes.get(kp["name"], 0)
+            new_score = old_score + score_change
 
-    # Record delta history
+            # Archive if new score is below threshold
+            if new_score <= threshold:
+                # Add archival to main delta (not separate delta)
+                delta.remove_keypoint(
+                    kp["name"],
+                    reason=f"Score {new_score} (was {old_score}, change {score_change:+d}) below threshold {threshold}"
+                )
+
+    # Apply complete delta to playbook (includes additions, updates, and archival)
+    playbook = apply_delta(playbook, delta)
+
+    # Record complete delta history (now includes archival operations)
     history = PlaybookHistory(get_ace_dir())
     history.record_delta(delta, playbook)
 
