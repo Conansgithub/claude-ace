@@ -4,9 +4,9 @@
 # Install Claude ACE into any Claude Code project
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/claude-ace/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Conansgithub/claude-ace/main/install.sh | bash
 #   OR
-#   wget -qO- https://raw.githubusercontent.com/YOUR_USERNAME/claude-ace/main/install.sh | bash
+#   wget -qO- https://raw.githubusercontent.com/Conansgithub/claude-ace/main/install.sh | bash
 #
 # Options:
 #   INSTALL_DIR - Target project directory (default: current directory)
@@ -25,8 +25,8 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-REPO_URL="https://github.com/YOUR_USERNAME/claude-ace"
-RAW_URL="https://raw.githubusercontent.com/YOUR_USERNAME/claude-ace/main"
+REPO_URL="https://github.com/Conansgithub/claude-ace"
+RAW_URL="https://raw.githubusercontent.com/Conansgithub/claude-ace/main"
 INSTALL_DIR="${INSTALL_DIR:-$(pwd)}"
 FORCE="${FORCE:-false}"
 SKIP_HOOKS="${SKIP_HOOKS:-false}"
@@ -112,9 +112,8 @@ download_ace() {
 
     if [ "$DOWNLOAD_METHOD" = "git" ]; then
         # Use git clone
-        git clone --depth 1 "$REPO_URL" claude-ace &> /dev/null
-        if [ $? -ne 0 ]; then
-            print_error "Failed to clone repository"
+        if ! git clone --depth 1 "$REPO_URL" claude-ace 2>&1; then
+            print_error "Failed to clone repository from $REPO_URL"
             print_info "Please check your internet connection and repository URL"
             exit 1
         fi
