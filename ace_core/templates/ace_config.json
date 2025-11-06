@@ -1,0 +1,18 @@
+{
+  "reflection": {
+    "min_atomicity_score": 0.70,
+    "max_keypoints_to_inject": 15,
+    "auto_cleanup_threshold": -5
+  },
+  "scoring": {
+    "helpful_delta": 1,
+    "neutral_delta": -1,
+    "harmful_delta": -3
+  },
+  "hooks": {
+    "enable_user_prompt_inject": true,
+    "enable_precompact": true,
+    "enable_session_end": true,
+    "inject_only_positive_scores": true
+  }
+}

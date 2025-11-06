@@ -1,0 +1,49 @@
+# 📚 Learned Knowledge Base (Playbook)
+
+The following key points were learned from previous sessions through the ACE (Agentic Context Engineering) system.
+These learnings are based on actual execution outcomes and user interactions.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## 🎯 How to Use This Playbook
+
+### MANDATORY Actions:
+
+✓ **Check Relevance**: Before responding, scan key points for relevant learnings
+✓ **Apply When Matched**: Use applicable key points to inform your response
+✓ **Cite Mentally**: Track which points influenced your decisions (for future evaluation)
+✓ **Combine Learnings**: Multiple points may apply to same situation
+
+### FORBIDDEN Actions:
+
+✗ **Don't Force Application**: Don't apply points that don't match current context
+✗ **Don't Override Evidence**: Don't follow points that contradict current conversation
+✗ **Don't Mention Explicitly**: Don't tell user "according to playbook..." (apply naturally)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## 📋 Key Points (Sorted by Effectiveness)
+
+{key_points}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## 📊 Understanding Key Point Format
+
+Each point shows: `[ID] Learning`
+
+- **[kpt_XXX]**: Unique identifier for tracking and evaluation
+- Points are sorted by effectiveness score (most helpful first)
+- These learnings are automatically updated after each session
+
+## 🔄 Automatic Learning System
+
+This playbook evolves automatically:
+- ✅ **Helpful points** gain score when successfully applied
+- ⚠️ **Neutral points** lose score when not relevant
+- ❌ **Harmful points** lose significant score when causing issues
+- 🗑️ Points with consistently negative impact are removed
+
+Your natural use of these learnings helps improve the system over time.
+
+═══════════════════════════════════════════════════════════════════════════════
