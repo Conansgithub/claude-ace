@@ -33,23 +33,23 @@ Install directly from GitHub without cloning:
 
 ```bash
 # Install in current directory
-curl -fsSL https://raw.githubusercontent.com/yourusername/claude-ace/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Conansgithub/claude-ace/main/install.sh | bash
 
 # Or using wget
-wget -qO- https://raw.githubusercontent.com/yourusername/claude-ace/main/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/Conansgithub/claude-ace/main/install.sh | bash
 
 # Install in specific directory
-INSTALL_DIR=/path/to/project curl -fsSL https://raw.githubusercontent.com/yourusername/claude-ace/main/install.sh | bash
+INSTALL_DIR=/path/to/project curl -fsSL https://raw.githubusercontent.com/Conansgithub/claude-ace/main/install.sh | bash
 
 # Force overwrite existing files
-FORCE=true curl -fsSL https://raw.githubusercontent.com/yourusername/claude-ace/main/install.sh | bash
+FORCE=true curl -fsSL https://raw.githubusercontent.com/Conansgithub/claude-ace/main/install.sh | bash
 ```
 
 ### Method 2: Clone and Install
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/claude-ace.git
+git clone https://github.com/Conansgithub/claude-ace.git
 cd claude-ace
 
 # Install into your project
@@ -64,7 +64,7 @@ python install.py
 Ultra-lightweight version for slow connections:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yourusername/claude-ace/main/quick-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Conansgithub/claude-ace/main/quick-install.sh | bash
 ```
 
 ### That's It!
@@ -253,7 +253,7 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 ### Development Setup
 
 ```bash
-git clone https://github.com/yourusername/claude-ace.git
+git clone https://github.com/Conansgithub/claude-ace.git
 cd claude-ace
 
 # Test installation
@@ -272,15 +272,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Inspired by the [Agentic Context Engineering paper](https://arxiv.org/abs/2510.04618)
 - Built for [Claude Code](https://claude.ai/code) by Anthropic
+- [Claude Code Hooks](https://code.claude.com/docs/en/hooks-guide)
 - Based on insights from the [agentic-context-engine](https://github.com/kayba-ai/agentic-context-engine) project
+- Based on insights from the [agentic_context_engineering](https://github.com/bluenoah1991/agentic_context_engineering)
 
 ---
 
 ## 📧 Contact & Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/claude-ace/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/claude-ace/discussions)
-- **Twitter**: [@yourusername](https://twitter.com/yourusername)
+- **Issues**: [GitHub Issues](https://github.com/Conansgithub/claude-ace/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Conansgithub/claude-ace/discussions)
 
 ---
 
@@ -288,7 +289,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you find Claude ACE useful, please consider starring the project!
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/claude-ace&type=Date)](https://star-history.com/#yourusername/claude-ace&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Conansgithub/claude-ace&type=Date)](https://star-history.com/#Conansgithub/claude-ace&Date)
 
 ---
 
