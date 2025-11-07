@@ -273,6 +273,8 @@ python install.py --project ./examples/demo_project
 - 灵感来自 [Agentic Context Engineering 论文](https://arxiv.org/abs/2510.04618)
 - 为 Anthropic 的 [Claude Code](https://claude.ai/code) 构建
 - 基于 [agentic-context-engine](https://github.com/kayba-ai/agentic-context-engine) 项目
+- [Claude Code Hooks](https://code.claude.com/docs/en/hooks-guide)
+- 基于 [agentic_context_engineering](https://github.com/bluenoah1991/agentic_context_engineering) 项目
 
 ---
 
