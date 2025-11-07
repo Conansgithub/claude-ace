@@ -274,7 +274,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built for [Claude Code](https://claude.ai/code) by Anthropic
 - [Claude Code Hooks](https://code.claude.com/docs/en/hooks-guide)
 - Based on insights from the [agentic-context-engine](https://github.com/kayba-ai/agentic-context-engine) project
-- Based on insights from the [agentic_context_engineering](https://github.com/bluenoah1991/agentic_context_engineering)
+- Based on insights from the [agentic_context_engineering](https://github.com/bluenoah1991/agentic_context_engineering) project
 
 ---
 
