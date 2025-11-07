@@ -33,23 +33,23 @@
 
 ```bash
 # 在当前目录安装
-curl -fsSL https://raw.githubusercontent.com/yourusername/claude-ace/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Conansgithub/claude-ace/main/install.sh | bash
 
 # 或使用 wget
-wget -qO- https://raw.githubusercontent.com/yourusername/claude-ace/main/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/Conansgithub/claude-ace/main/install.sh | bash
 
 # 安装到指定目录
-INSTALL_DIR=/path/to/project curl -fsSL https://raw.githubusercontent.com/yourusername/claude-ace/main/install.sh | bash
+INSTALL_DIR=/path/to/project curl -fsSL https://raw.githubusercontent.com/Conansgithub/claude-ace/main/install.sh | bash
 
 # 强制覆盖已有文件
-FORCE=true curl -fsSL https://raw.githubusercontent.com/yourusername/claude-ace/main/install.sh | bash
+FORCE=true curl -fsSL https://raw.githubusercontent.com/Conansgithub/claude-ace/main/install.sh | bash
 ```
 
 ### 方法 2: 克隆后安装
 
 ```bash
 # 克隆仓库
-git clone https://github.com/yourusername/claude-ace.git
+git clone https://github.com/Conansgithub/claude-ace.git
 cd claude-ace
 
 # 安装到你的项目
@@ -64,7 +64,7 @@ python install.py
 适合网络较慢的情况：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yourusername/claude-ace/main/quick-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Conansgithub/claude-ace/main/quick-install.sh | bash
 ```
 
 ### 就这么简单！
@@ -253,7 +253,7 @@ your-project/
 ### 开发环境设置
 
 ```bash
-git clone https://github.com/yourusername/claude-ace.git
+git clone https://github.com/Conansgithub/claude-ace.git
 cd claude-ace
 
 # 测试安装
@@ -272,15 +272,14 @@ python install.py --project ./examples/demo_project
 
 - 灵感来自 [Agentic Context Engineering 论文](https://arxiv.org/abs/2510.04618)
 - 为 Anthropic 的 [Claude Code](https://claude.ai/code) 构建
-- 基于 [agentic-context-engine](https://github.com/kayba-ai/agentic-context-engine) 项目的洞察
+- 基于 [agentic-context-engine](https://github.com/kayba-ai/agentic-context-engine) 项目
 
 ---
 
 ## 📧 联系与支持
 
-- **问题反馈**: [GitHub Issues](https://github.com/yourusername/claude-ace/issues)
-- **讨论**: [GitHub Discussions](https://github.com/yourusername/claude-ace/discussions)
-- **Twitter**: [@yourusername](https://twitter.com/yourusername)
+- **问题反馈**: [GitHub Issues](https://github.com/Conansgithub/claude-ace/issues)
+- **讨论**: [GitHub Discussions](https://github.com/Conansgithub/claude-ace/discussions)
 
 ---
 
@@ -288,7 +287,7 @@ python install.py --project ./examples/demo_project
 
 如果你觉得 Claude ACE 有用，请考虑给项目加星！
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/claude-ace&type=Date)](https://star-history.com/#yourusername/claude-ace&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Conansgithub/claude-ace&type=Date)](https://star-history.com/#Conansgithub/claude-ace&Date)
 
 ---
 
