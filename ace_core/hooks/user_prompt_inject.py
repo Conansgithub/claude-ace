@@ -74,11 +74,12 @@ def format_playbook_with_vector_search(playbook: dict, user_query: str) -> str:
         # Initialize vector store
         vector_store = PlaybookVectorStore()
 
-        # Check if index exists, if not create it
-        if not vector_store.is_indexed():
-            print("Indexing playbook for first time...", file=sys.stderr)
+        # Check if reindexing is needed (e.g., new strategies added)
+        if vector_store.needs_reindex(playbook):
+            print("Playbook updated, reindexing...", file=sys.stderr)
             indexed_count = vector_store.index_playbook(playbook)
-            print(f"Indexed {indexed_count} strategies", file=sys.stderr)
+            if indexed_count > 0:
+                print(f"✓ Vector index updated ({indexed_count} strategies)", file=sys.stderr)
 
         # Search for relevant strategies
         # Only search positive-score strategies

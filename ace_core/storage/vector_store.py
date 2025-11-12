@@ -406,6 +406,51 @@ class PlaybookVectorStore:
 
         return False
 
+    def needs_reindex(self, playbook: Dict) -> bool:
+        """
+        Check if playbook needs reindexing
+
+        Args:
+            playbook: Current playbook
+
+        Returns:
+            True if reindex needed
+        """
+        if not self.backend:
+            return False
+
+        # Count active strategies in playbook
+        active_strategies = [
+            kp for kp in playbook.get('key_points', [])
+            if kp.get('status') == 'active'
+        ]
+        playbook_count = len(active_strategies)
+
+        # Check minimum threshold
+        min_strategies = self.config.get('min_strategies_for_index', 10)
+        if playbook_count < min_strategies:
+            return False  # Not enough strategies to index
+
+        try:
+            # Get current index count
+            if self.backend['type'] == 'qdrant':
+                async def _check():
+                    stats = await self.backend['store'].get_collection_stats()
+                    return stats.get('points_count', 0)
+                index_count = _run_async_safe(_check())
+            elif self.backend['type'] == 'chroma':
+                index_count = self.backend['collection'].count()
+            else:
+                return False
+
+            # Need reindex if counts don't match
+            return playbook_count != index_count
+
+        except Exception as e:
+            print(f"Warning: Failed to check reindex need: {e}", file=sys.stderr)
+            # If we can't check, assume we need to reindex
+            return True
+
     def get_stats(self) -> Dict:
         """Get statistics"""
         if not self.backend:
