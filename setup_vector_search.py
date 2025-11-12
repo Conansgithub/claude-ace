@@ -51,9 +51,11 @@ def print_warning(text: str):
 async def check_qdrant(host: str = "localhost", port: int = 6333) -> Dict:
     """Check Qdrant service availability"""
     try:
-        from storage.qdrant_store import check_qdrant_available
+        from storage.qdrant_store import QdrantVectorStore
 
-        result = check_qdrant_available(host=host, port=port)
+        store = QdrantVectorStore(host=host, port=port)
+        result = await store.health_check()
+        await store.close()
         return result
     except ImportError as e:
         return {
@@ -70,10 +72,24 @@ async def check_qdrant(host: str = "localhost", port: int = 6333) -> Dict:
 async def check_ollama(host: str = "http://localhost:11434", model: str = "qwen3-embedding:0.6b") -> Dict:
     """Check Ollama service and model availability"""
     try:
-        from storage.ollama_embedding import check_ollama_available
+        from storage.ollama_embedding import OllamaEmbeddingClient
 
-        result = check_ollama_available(host=host, model=model)
-        return result
+        async with OllamaEmbeddingClient(host=host, model=model) as client:
+            # Try to list models to check service availability
+            try:
+                models = await client.list_models()
+                model_available = model in models
+
+                return {
+                    'status': 'ok' if model_available else 'warning',
+                    'model_available': model_available,
+                    'available_models': models[:5] if models else []
+                }
+            except Exception as e:
+                return {
+                    'status': 'error',
+                    'message': str(e)
+                }
     except ImportError as e:
         return {
             'status': 'error',
