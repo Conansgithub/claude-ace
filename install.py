@@ -182,7 +182,9 @@ class ACEInstaller:
         print("\n💾 Installing storage modules (production vector search)...")
 
         storage_src = self.ace_core / "storage"
-        storage_dst = self.claude_dir / "hooks"  # Place in hooks for easy import
+        # Create storage subdirectory to maintain package structure
+        storage_dst = self.claude_dir / "hooks" / "storage"
+        storage_dst.mkdir(parents=True, exist_ok=True)
 
         storage_files = [
             "__init__.py",
@@ -196,13 +198,13 @@ class ACEInstaller:
             dst = storage_dst / filename
 
             if dst.exists() and not self.force:
-                print(f"   ○ Skipped (exists): {filename}")
-                self.stats['skipped_files'].append(filename)
+                print(f"   ○ Skipped (exists): storage/{filename}")
+                self.stats['skipped_files'].append(f"storage/{filename}")
             else:
                 shutil.copy2(src, dst)
                 action = "Updated" if dst.exists() else "Created"
-                print(f"   ✓ {action}: {filename}")
-                self.stats['created_files'].append(filename)
+                print(f"   ✓ {action}: storage/{filename}")
+                self.stats['created_files'].append(f"storage/{filename}")
 
     def setup_settings(self):
         """Create or merge settings.json with hooks configuration"""

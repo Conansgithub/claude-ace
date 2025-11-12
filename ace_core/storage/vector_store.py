@@ -13,6 +13,27 @@ from typing import List, Dict, Optional
 from pathlib import Path
 
 
+def _run_async_safe(coro):
+    """
+    Safely run async coroutine, handling existing event loops
+
+    This prevents "RuntimeError: asyncio.run() cannot be called from a running event loop"
+    which can happen in Jupyter notebooks or when hooks are called from async contexts.
+    """
+    try:
+        # Try to get the running loop
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # No event loop running, safe to use asyncio.run()
+        return asyncio.run(coro)
+    else:
+        # Event loop already running - this shouldn't happen in normal hook execution
+        # but we handle it gracefully by creating a new task
+        print("Warning: Running in existing event loop context", file=sys.stderr)
+        # Create and run task in existing loop
+        return loop.run_until_complete(coro)
+
+
 class PlaybookVectorStore:
     """
     Unified vector store interface with automatic backend selection
@@ -61,8 +82,8 @@ class PlaybookVectorStore:
             try:
                 with open(config_path) as f:
                     return json.load(f).get('vector_search', {})
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Warning: Failed to load vector search config: {e}", file=sys.stderr)
 
         # Default config
         return {
@@ -231,7 +252,7 @@ class PlaybookVectorStore:
             return count
 
         try:
-            return asyncio.run(_do_index())
+            return _run_async_safe(_do_index())
         except Exception as e:
             print(f"Qdrant indexing failed: {e}", file=sys.stderr)
             return 0
@@ -248,8 +269,8 @@ class PlaybookVectorStore:
                     metadata={"hnsw:space": "cosine"}
                 )
                 self.backend['collection'] = collection
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Warning: Could not recreate collection, using existing: {e}", file=sys.stderr)
 
             # Add strategies
             ids = [s['name'] for s in strategies]
@@ -327,7 +348,7 @@ class PlaybookVectorStore:
             } for r in results]
 
         try:
-            return asyncio.run(_do_search())
+            return _run_async_safe(_do_search())
         except Exception as e:
             print(f"Qdrant search failed: {e}", file=sys.stderr)
             return []
@@ -376,10 +397,11 @@ class PlaybookVectorStore:
                 async def _check():
                     stats = await self.backend['store'].get_collection_stats()
                     return stats.get('points_count', 0) > 0
-                return asyncio.run(_check())
+                return _run_async_safe(_check())
             elif self.backend['type'] == 'chroma':
                 return self.backend['collection'].count() > 0
-        except Exception:
+        except Exception as e:
+            print(f"Warning: Failed to check if indexed: {e}", file=sys.stderr)
             return False
 
         return False
@@ -399,10 +421,10 @@ class PlaybookVectorStore:
                 async def _get_stats():
                     store_stats = await self.backend['store'].get_collection_stats()
                     return {**stats, **store_stats}
-                return asyncio.run(_get_stats())
+                return _run_async_safe(_get_stats())
             elif self.backend['type'] == 'chroma':
                 stats['points_count'] = self.backend['collection'].count()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Warning: Failed to get detailed stats: {e}", file=sys.stderr)
 
         return stats

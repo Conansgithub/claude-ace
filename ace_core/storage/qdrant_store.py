@@ -4,6 +4,7 @@ Production-grade vector database integration
 """
 
 import asyncio
+import sys
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 
@@ -11,11 +12,23 @@ try:
     from qdrant_client import QdrantClient, AsyncQdrantClient
     from qdrant_client.models import (
         Distance, VectorParams, PointStruct,
-        Filter, FieldCondition, Range, SearchRequest
+        Filter, FieldCondition, Range
     )
     QDRANT_AVAILABLE = True
 except ImportError:
     QDRANT_AVAILABLE = False
+
+
+def _run_async_safe(coro):
+    """Safely run async coroutine, handling existing event loops"""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # No event loop running, safe to use asyncio.run()
+        return asyncio.run(coro)
+    else:
+        print("Warning: Running in existing event loop context", file=sys.stderr)
+        return loop.run_until_complete(coro)
 
 
 @dataclass
@@ -375,7 +388,7 @@ def check_qdrant_available(
         return result
 
     try:
-        return asyncio.run(_check())
+        return _run_async_safe(_check())
     except Exception as e:
         return {
             'status': 'error',

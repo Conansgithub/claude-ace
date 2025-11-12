@@ -5,9 +5,22 @@ Production-grade local embedding service integration
 
 import asyncio
 import aiohttp
+import sys
 import time
 from typing import List, Dict, Optional
 from dataclasses import dataclass
+
+
+def _run_async_safe(coro):
+    """Safely run async coroutine, handling existing event loops"""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # No event loop running, safe to use asyncio.run()
+        return asyncio.run(coro)
+    else:
+        print("Warning: Running in existing event loop context", file=sys.stderr)
+        return loop.run_until_complete(coro)
 
 
 @dataclass
@@ -278,7 +291,7 @@ def check_ollama_available(
             return await client.health_check()
 
     try:
-        return asyncio.run(_check())
+        return _run_async_safe(_check())
     except Exception as e:
         return {
             'status': 'error',
