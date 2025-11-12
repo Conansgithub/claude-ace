@@ -10,6 +10,16 @@ import sys
 from pathlib import Path
 from typing import Dict, Optional
 
+# Add .claude/hooks to path so we can import ace_core modules
+script_dir = Path(__file__).parent
+claude_dir = script_dir.parent
+hooks_dir = claude_dir / "hooks"
+if hooks_dir.exists():
+    sys.path.insert(0, str(hooks_dir))
+else:
+    # Running from repo root, not installed yet
+    sys.path.insert(0, str(Path(__file__).parent / "ace_core"))
+
 
 def print_header(text: str):
     """Print formatted header"""
@@ -41,7 +51,7 @@ def print_warning(text: str):
 async def check_qdrant(host: str = "localhost", port: int = 6333) -> Dict:
     """Check Qdrant service availability"""
     try:
-        from ace_core.storage.qdrant_store import check_qdrant_available
+        from storage.qdrant_store import check_qdrant_available
 
         result = check_qdrant_available(host=host, port=port)
         return result
@@ -60,7 +70,7 @@ async def check_qdrant(host: str = "localhost", port: int = 6333) -> Dict:
 async def check_ollama(host: str = "http://localhost:11434", model: str = "qwen3-embedding:0.6b") -> Dict:
     """Check Ollama service and model availability"""
     try:
-        from ace_core.storage.ollama_embedding import check_ollama_available
+        from storage.ollama_embedding import check_ollama_available
 
         result = check_ollama_available(host=host, model=model)
         return result
@@ -79,7 +89,7 @@ async def check_ollama(host: str = "http://localhost:11434", model: str = "qwen3
 async def test_embedding_generation(host: str, model: str) -> bool:
     """Test embedding generation"""
     try:
-        from ace_core.storage.ollama_embedding import OllamaEmbeddingClient
+        from storage.ollama_embedding import OllamaEmbeddingClient
 
         async with OllamaEmbeddingClient(host=host, model=model) as client:
             embedding = await client.embed_text("Test embedding generation")
@@ -99,8 +109,8 @@ async def test_embedding_generation(host: str, model: str) -> bool:
 async def test_qdrant_indexing(host: str, port: int, collection: str) -> bool:
     """Test Qdrant collection creation and indexing"""
     try:
-        from ace_core.storage.qdrant_store import QdrantVectorStore
-        from ace_core.storage.ollama_embedding import OllamaEmbeddingClient
+        from storage.qdrant_store import QdrantVectorStore
+        from storage.ollama_embedding import OllamaEmbeddingClient
 
         # Create test strategy
         test_strategies = [{
