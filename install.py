@@ -183,6 +183,18 @@ class ACEInstaller:
             print(f"   ✓ {action}: setup_vector_search.py (always updated)")
             self.stats['created_files'].append('setup_vector_search.py')
 
+        # Copy diagnose_vector_index.py to scripts directory
+        diagnose_src = Path(__file__).parent / "diagnose_vector_index.py"
+        diagnose_dst = scripts_dst / "diagnose_vector_index.py"
+
+        if diagnose_src.exists():
+            # Always overwrite diagnostic tool
+            shutil.copy2(diagnose_src, diagnose_dst)
+            diagnose_dst.chmod(0o755)
+            action = "Updated" if diagnose_dst.exists() else "Created"
+            print(f"   ✓ {action}: diagnose_vector_index.py (always updated)")
+            self.stats['created_files'].append('diagnose_vector_index.py')
+
     def copy_storage(self):
         """Copy storage modules to project"""
         print("\n💾 Installing storage modules (production vector search)...")
