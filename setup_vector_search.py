@@ -75,21 +75,8 @@ async def check_ollama(host: str = "http://localhost:11434", model: str = "qwen3
         from storage.ollama_embedding import OllamaEmbeddingClient
 
         async with OllamaEmbeddingClient(host=host, model=model) as client:
-            # Try to list models to check service availability
-            try:
-                models = await client.list_models()
-                model_available = model in models
-
-                return {
-                    'status': 'ok' if model_available else 'warning',
-                    'model_available': model_available,
-                    'available_models': models[:5] if models else []
-                }
-            except Exception as e:
-                return {
-                    'status': 'error',
-                    'message': str(e)
-                }
+            result = await client.health_check()
+            return result
     except ImportError as e:
         return {
             'status': 'error',
