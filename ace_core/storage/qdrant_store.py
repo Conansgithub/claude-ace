@@ -58,7 +58,7 @@ class QdrantVectorStore:
         host: str = "localhost",
         port: int = 6333,
         collection_name: str = "playbook_strategies",
-        vector_size: int = 768,  # qwen3-embedding dimension
+        vector_size: int = 1024,  # qwen3-embedding:0.6b dimension
         prefer_grpc: bool = False
     ):
         """
