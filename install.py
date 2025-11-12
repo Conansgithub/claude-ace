@@ -68,7 +68,15 @@ class ACEInstaller:
         hooks_src = self.ace_core / "hooks"
         hooks_dst = self.claude_dir / "hooks"
 
-        hook_files = ["common.py", "delta_manager.py", "user_prompt_inject.py", "precompact.py", "session_end.py"]
+        hook_files = [
+            "common.py",
+            "delta_manager.py",
+            "user_prompt_inject.py",
+            "pre_tool_use.py",
+            "post_tool_use.py",
+            "precompact.py",
+            "session_end.py"
+        ]
 
         for filename in hook_files:
             src = hooks_src / filename
