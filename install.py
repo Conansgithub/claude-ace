@@ -162,6 +162,31 @@ class ACEInstaller:
                 print(f"   ✓ {action}: {filename}")
                 self.stats['created_files'].append(filename)
 
+    def copy_storage(self):
+        """Copy storage modules to project"""
+        print("\n💾 Installing storage modules...")
+
+        storage_src = self.ace_core / "storage"
+        storage_dst = self.claude_dir / "hooks"  # Place in hooks for easy import
+
+        storage_files = [
+            "__init__.py",
+            "vector_store.py"
+        ]
+
+        for filename in storage_files:
+            src = storage_src / filename
+            dst = storage_dst / filename
+
+            if dst.exists() and not self.force:
+                print(f"   ○ Skipped (exists): {filename}")
+                self.stats['skipped_files'].append(filename)
+            else:
+                shutil.copy2(src, dst)
+                action = "Updated" if dst.exists() else "Created"
+                print(f"   ✓ {action}: {filename}")
+                self.stats['created_files'].append(filename)
+
     def setup_settings(self):
         """Create or merge settings.json with hooks configuration"""
         print("\n⚙️  Configuring hooks...")
@@ -269,19 +294,24 @@ class ACEInstaller:
     def print_next_steps(self):
         """Print next steps and usage information"""
         print("\n📖 Next Steps:")
-        print("\n1. Verify installation:")
+
+        print("\n1. Install required dependencies:")
+        print("   pip install chromadb")
+        print("   (Required for vector search - enables semantic strategy matching)")
+
+        print("\n2. Verify installation:")
         print(f"   ls -la {self.claude_dir.relative_to(self.project_dir)}/")
 
-        print("\n2. Enable diagnostic mode (optional, for debugging):")
+        print("\n3. Enable diagnostic mode (optional, for debugging):")
         print(f"   touch {(self.claude_dir / 'diagnostic_mode').relative_to(self.project_dir)}")
 
-        print("\n3. Start using Claude Code in this project!")
+        print("\n4. Start using Claude Code in this project!")
         print("   The ACE system will automatically:")
-        print("   • Inject learned knowledge at session start")
+        print("   • Inject learned knowledge at session start (with semantic search!)")
         print("   • Extract learnings during context compaction")
         print("   • Reflect and update knowledge at session end")
 
-        print("\n4. Manage your playbook:")
+        print("\n5. Manage your playbook:")
         print(f"   python {(self.claude_dir / 'scripts' / 'view_playbook.py').relative_to(self.project_dir)}")
         print(f"   python {(self.claude_dir / 'scripts' / 'cleanup_playbook.py').relative_to(self.project_dir)}")
         print(f"   python {(self.claude_dir / 'scripts' / 'analyze_diagnostics.py').relative_to(self.project_dir)}")
@@ -311,6 +341,7 @@ class ACEInstaller:
             self.create_directory_structure()
             self.copy_hooks()
             self.copy_roles()
+            self.copy_storage()
             self.copy_prompts()
             self.copy_scripts()
             self.setup_settings()
