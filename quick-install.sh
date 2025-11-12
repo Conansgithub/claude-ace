@@ -7,7 +7,7 @@
 set -e
 
 # Configuration
-REPO="YOUR_USERNAME/claude-ace"  # Update this!
+REPO="Conansgithub/claude-ace"
 RAW_BASE="https://raw.githubusercontent.com/$REPO/main"
 
 # Colors
@@ -34,7 +34,7 @@ echo -e "${Y}⬇ Downloading...${NC}"
 
 # Download files
 cd "$TMP"
-mkdir -p ace_core/{hooks,prompts,scripts,templates}
+mkdir -p ace_core/{hooks,roles,storage,prompts,scripts,templates}
 
 # Download core files
 download() {
@@ -48,15 +48,38 @@ download() {
 
 # Download structure
 download "install.py"
+download "setup_vector_search.py"
+download "ace_config.json.template"
+
+# Hooks
 download "ace_core/hooks/common.py"
+download "ace_core/hooks/delta_manager.py"
 download "ace_core/hooks/user_prompt_inject.py"
 download "ace_core/hooks/precompact.py"
 download "ace_core/hooks/session_end.py"
+
+# Roles (Phase 2)
+download "ace_core/roles/reflector.py"
+download "ace_core/roles/curator.py"
+download "ace_core/roles/feedback_environment.py"
+
+# Storage (Phase 3)
+download "ace_core/storage/__init__.py"
+download "ace_core/storage/vector_store.py"
+download "ace_core/storage/ollama_embedding.py"
+download "ace_core/storage/qdrant_store.py"
+
+# Prompts
 download "ace_core/prompts/reflection.txt"
 download "ace_core/prompts/playbook.txt"
+
+# Scripts
 download "ace_core/scripts/view_playbook.py"
 download "ace_core/scripts/cleanup_playbook.py"
 download "ace_core/scripts/analyze_diagnostics.py"
+download "ace_core/scripts/view_history.py"
+
+# Templates
 download "ace_core/templates/settings.json"
 download "ace_core/templates/playbook.json"
 download "ace_core/templates/ace_config.json"
