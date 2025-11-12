@@ -162,6 +162,21 @@ class ACEInstaller:
                 print(f"   ✓ {action}: {filename}")
                 self.stats['created_files'].append(filename)
 
+        # Copy setup_vector_search.py to scripts directory
+        setup_src = Path(__file__).parent / "setup_vector_search.py"
+        setup_dst = scripts_dst / "setup_vector_search.py"
+
+        if setup_src.exists():
+            if setup_dst.exists() and not self.force:
+                print(f"   ○ Skipped (exists): setup_vector_search.py")
+                self.stats['skipped_files'].append('setup_vector_search.py')
+            else:
+                shutil.copy2(setup_src, setup_dst)
+                setup_dst.chmod(0o755)
+                action = "Updated" if setup_dst.exists() else "Created"
+                print(f"   ✓ {action}: setup_vector_search.py")
+                self.stats['created_files'].append('setup_vector_search.py')
+
     def copy_storage(self):
         """Copy storage modules to project"""
         print("\n💾 Installing storage modules (production vector search)...")
@@ -304,7 +319,7 @@ class ACEInstaller:
         print("   pip install chromadb")
         print("   (Development fallback if Qdrant unavailable)")
 
-        print("\n2. Set up production vector search (RECOMMENDED):")
+        print("\n2. Set up production vector search (OPTIONAL):")
         print("   a. Start Qdrant (if not running):")
         print("      docker run -d -p 6333:6333 qdrant/qdrant")
         print("\n   b. Start Ollama (if not running):")
@@ -312,27 +327,23 @@ class ACEInstaller:
         print("\n   c. Pull embedding model:")
         print("      ollama pull qwen3-embedding:0.6b")
         print("\n   d. Run setup script:")
-        print("      python setup_vector_search.py")
+        print(f"      python {(self.claude_dir / 'scripts' / 'setup_vector_search.py').relative_to(self.project_dir)}")
 
-        print("\n3. Verify installation:")
-        print(f"   ls -la {self.claude_dir.relative_to(self.project_dir)}/")
-
-        print("\n4. Test vector search:")
-        print("   python test_vector_search.py")
-
-        print("\n5. Enable diagnostic mode (optional, for debugging):")
-        print(f"   touch {(self.claude_dir / 'diagnostic_mode').relative_to(self.project_dir)}")
-
-        print("\n6. Start using Claude Code in this project!")
-        print("   The ACE system will automatically:")
-        print("   • Inject learned knowledge at session start (with semantic search!)")
+        print("\n3. Start using Claude Code! 🎉")
+        print("   The ACE system is ready to use (vector search is optional)")
+        print("   cd to your project and start a Claude Code session")
+        print("   The system will automatically:")
+        print("   • Inject learned knowledge at session start")
         print("   • Extract learnings during context compaction")
         print("   • Reflect and update knowledge at session end")
 
-        print("\n7. Manage your playbook:")
+        print("\n4. Manage your playbook:")
         print(f"   python {(self.claude_dir / 'scripts' / 'view_playbook.py').relative_to(self.project_dir)}")
         print(f"   python {(self.claude_dir / 'scripts' / 'cleanup_playbook.py').relative_to(self.project_dir)}")
         print(f"   python {(self.claude_dir / 'scripts' / 'analyze_diagnostics.py').relative_to(self.project_dir)}")
+
+        print("\n5. Enable diagnostic mode (optional, for debugging):")
+        print(f"   touch {(self.claude_dir / 'diagnostic_mode').relative_to(self.project_dir)}")
 
         print("\n💡 Tips:")
         print("   • The playbook starts empty and learns from your interactions")
