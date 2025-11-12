@@ -7,8 +7,15 @@ import sys
 import asyncio
 from pathlib import Path
 
-# Add ace_core to path
-sys.path.insert(0, str(Path(__file__).parent / "ace_core"))
+# Add .claude/hooks to path so we can import storage modules
+script_dir = Path(__file__).parent
+claude_dir = script_dir.parent
+hooks_dir = claude_dir / "hooks"
+if hooks_dir.exists():
+    sys.path.insert(0, str(hooks_dir))
+else:
+    # Running from repo root, not installed yet
+    sys.path.insert(0, str(Path(__file__).parent / "ace_core"))
 
 from storage.qdrant_store import QdrantVectorStore
 from storage.ollama_embedding import OllamaEmbeddingClient
