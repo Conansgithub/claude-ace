@@ -164,14 +164,16 @@ class ACEInstaller:
 
     def copy_storage(self):
         """Copy storage modules to project"""
-        print("\n💾 Installing storage modules...")
+        print("\n💾 Installing storage modules (production vector search)...")
 
         storage_src = self.ace_core / "storage"
         storage_dst = self.claude_dir / "hooks"  # Place in hooks for easy import
 
         storage_files = [
             "__init__.py",
-            "vector_store.py"
+            "vector_store.py",
+            "ollama_embedding.py",
+            "qdrant_store.py"
         ]
 
         for filename in storage_files:
@@ -296,22 +298,38 @@ class ACEInstaller:
         print("\n📖 Next Steps:")
 
         print("\n1. Install required dependencies:")
+        print("   pip install aiohttp qdrant-client")
+        print("   (Required for production vector search)")
+        print("\n   Optional fallback:")
         print("   pip install chromadb")
-        print("   (Required for vector search - enables semantic strategy matching)")
+        print("   (Development fallback if Qdrant unavailable)")
 
-        print("\n2. Verify installation:")
+        print("\n2. Set up production vector search (RECOMMENDED):")
+        print("   a. Start Qdrant (if not running):")
+        print("      docker run -d -p 6333:6333 qdrant/qdrant")
+        print("\n   b. Start Ollama (if not running):")
+        print("      ollama serve")
+        print("\n   c. Pull embedding model:")
+        print("      ollama pull qwen3-embedding:0.6b")
+        print("\n   d. Run setup script:")
+        print("      python setup_vector_search.py")
+
+        print("\n3. Verify installation:")
         print(f"   ls -la {self.claude_dir.relative_to(self.project_dir)}/")
 
-        print("\n3. Enable diagnostic mode (optional, for debugging):")
+        print("\n4. Test vector search:")
+        print("   python test_vector_search.py")
+
+        print("\n5. Enable diagnostic mode (optional, for debugging):")
         print(f"   touch {(self.claude_dir / 'diagnostic_mode').relative_to(self.project_dir)}")
 
-        print("\n4. Start using Claude Code in this project!")
+        print("\n6. Start using Claude Code in this project!")
         print("   The ACE system will automatically:")
         print("   • Inject learned knowledge at session start (with semantic search!)")
         print("   • Extract learnings during context compaction")
         print("   • Reflect and update knowledge at session end")
 
-        print("\n5. Manage your playbook:")
+        print("\n7. Manage your playbook:")
         print(f"   python {(self.claude_dir / 'scripts' / 'view_playbook.py').relative_to(self.project_dir)}")
         print(f"   python {(self.claude_dir / 'scripts' / 'cleanup_playbook.py').relative_to(self.project_dir)}")
         print(f"   python {(self.claude_dir / 'scripts' / 'analyze_diagnostics.py').relative_to(self.project_dir)}")
@@ -319,11 +337,13 @@ class ACEInstaller:
         print("\n💡 Tips:")
         print("   • The playbook starts empty and learns from your interactions")
         print("   • Key points are automatically scored and pruned")
+        print("   • Vector search uses Qdrant + Ollama (production) or ChromaDB (fallback)")
         print("   • Check .claude/diagnostic/ for detailed reflection logs (if enabled)")
 
         print("\n📚 Documentation:")
         print("   • README: ./docs/README.md")
         print("   • Usage Guide: ./docs/USAGE.md")
+        print("   • Phase 3 Improvements: ./PHASE3_IMPROVEMENTS.md")
 
         print("\n" + "═" * 80)
 
