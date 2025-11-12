@@ -68,7 +68,15 @@ class ACEInstaller:
         hooks_src = self.ace_core / "hooks"
         hooks_dst = self.claude_dir / "hooks"
 
-        hook_files = ["common.py", "delta_manager.py", "user_prompt_inject.py", "precompact.py", "session_end.py"]
+        hook_files = [
+            "common.py",
+            "delta_manager.py",
+            "user_prompt_inject.py",
+            "pre_tool_use.py",
+            "post_tool_use.py",
+            "precompact.py",
+            "session_end.py"
+        ]
 
         for filename in hook_files:
             src = hooks_src / filename
@@ -163,19 +171,17 @@ class ACEInstaller:
                 self.stats['created_files'].append(filename)
 
         # Copy setup_vector_search.py to scripts directory
+        # Always update this file as it's frequently updated with critical fixes
         setup_src = Path(__file__).parent / "setup_vector_search.py"
         setup_dst = scripts_dst / "setup_vector_search.py"
 
         if setup_src.exists():
-            if setup_dst.exists() and not self.force:
-                print(f"   ○ Skipped (exists): setup_vector_search.py")
-                self.stats['skipped_files'].append('setup_vector_search.py')
-            else:
-                shutil.copy2(setup_src, setup_dst)
-                setup_dst.chmod(0o755)
-                action = "Updated" if setup_dst.exists() else "Created"
-                print(f"   ✓ {action}: setup_vector_search.py")
-                self.stats['created_files'].append('setup_vector_search.py')
+            # Always overwrite setup_vector_search.py (it's frequently updated)
+            shutil.copy2(setup_src, setup_dst)
+            setup_dst.chmod(0o755)
+            action = "Updated" if setup_dst.exists() else "Created"
+            print(f"   ✓ {action}: setup_vector_search.py (always updated)")
+            self.stats['created_files'].append('setup_vector_search.py')
 
     def copy_storage(self):
         """Copy storage modules to project"""
@@ -197,14 +203,11 @@ class ACEInstaller:
             src = storage_src / filename
             dst = storage_dst / filename
 
-            if dst.exists() and not self.force:
-                print(f"   ○ Skipped (exists): storage/{filename}")
-                self.stats['skipped_files'].append(f"storage/{filename}")
-            else:
-                shutil.copy2(src, dst)
-                action = "Updated" if dst.exists() else "Created"
-                print(f"   ✓ {action}: storage/{filename}")
-                self.stats['created_files'].append(f"storage/{filename}")
+            # Always overwrite storage modules (they contain critical async fixes)
+            shutil.copy2(src, dst)
+            action = "Updated" if dst.exists() else "Created"
+            print(f"   ✓ {action}: storage/{filename} (always updated)")
+            self.stats['created_files'].append(f"storage/{filename}")
 
     def setup_settings(self):
         """Create or merge settings.json with hooks configuration"""

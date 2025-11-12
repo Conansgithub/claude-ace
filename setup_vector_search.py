@@ -51,9 +51,11 @@ def print_warning(text: str):
 async def check_qdrant(host: str = "localhost", port: int = 6333) -> Dict:
     """Check Qdrant service availability"""
     try:
-        from storage.qdrant_store import check_qdrant_available
+        from storage.qdrant_store import QdrantVectorStore
 
-        result = check_qdrant_available(host=host, port=port)
+        store = QdrantVectorStore(host=host, port=port)
+        result = await store.health_check()
+        await store.close()
         return result
     except ImportError as e:
         return {
@@ -70,10 +72,11 @@ async def check_qdrant(host: str = "localhost", port: int = 6333) -> Dict:
 async def check_ollama(host: str = "http://localhost:11434", model: str = "qwen3-embedding:0.6b") -> Dict:
     """Check Ollama service and model availability"""
     try:
-        from storage.ollama_embedding import check_ollama_available
+        from storage.ollama_embedding import OllamaEmbeddingClient
 
-        result = check_ollama_available(host=host, model=model)
-        return result
+        async with OllamaEmbeddingClient(host=host, model=model) as client:
+            result = await client.health_check()
+            return result
     except ImportError as e:
         return {
             'status': 'error',
@@ -121,8 +124,30 @@ async def test_qdrant_indexing(host: str, port: int, collection: str) -> bool:
             'source': 'setup_test'
         }]
 
-        # Initialize clients
-        store = QdrantVectorStore(host=host, port=port, collection_name=collection)
+        # First, detect the embedding dimension
+        async with OllamaEmbeddingClient() as embed_client:
+            test_embedding = await embed_client.embed_text("test")
+            vector_size = len(test_embedding) if test_embedding else 1024
+
+        # Initialize store with correct vector size
+        store = QdrantVectorStore(host=host, port=port, collection_name=collection, vector_size=vector_size)
+
+        # Check if collection exists with wrong dimension - if so, recreate it
+        try:
+            health = await store.health_check()
+            if health.get('collection_exists'):
+                # Collection exists, check if we need to recreate it
+                # (this will happen if dimension changed)
+                print_warning(f"Existing collection found, will recreate with correct dimensions ({vector_size})")
+                await store.clear_collection()
+                # Delete and recreate
+                try:
+                    await store.client.delete_collection(collection_name=collection)
+                    print_success(f"Deleted old collection")
+                except:
+                    pass
+        except Exception as e:
+            print(f"   Note: {e}")
 
         async with OllamaEmbeddingClient() as embed_client:
             # Generate embedding

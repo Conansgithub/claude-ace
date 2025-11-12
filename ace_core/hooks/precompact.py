@@ -6,9 +6,10 @@ Extracts key points before context compaction occurs
 import json
 import sys
 import asyncio
+from pathlib import Path
 from common import (
     load_playbook, save_playbook, load_transcript,
-    extract_keypoints, update_playbook_data
+    extract_keypoints, update_playbook_data, get_ace_dir
 )
 
 # Try to import vector store for index updates
@@ -30,6 +31,51 @@ def _run_async_safe(coro):
         # Event loop already running - shouldn't happen but handle it
         print("Warning: Running in existing event loop context", file=sys.stderr)
         return loop.run_until_complete(coro)
+
+
+def get_tool_feedback(session_id: str) -> dict:
+    """
+    Get tool feedback without deleting events (PreCompact doesn't delete,
+    SessionEnd will delete them).
+
+    Returns:
+        Dict with error patterns and feedback
+    """
+    events_dir = get_ace_dir() / "tool_events"
+
+    if not events_dir.exists():
+        return {'errors': [], 'patterns': []}
+
+    # Collect events from this session (don't delete)
+    session_events = []
+    try:
+        for event_file in events_dir.glob("event_*.json"):
+            try:
+                with open(event_file, 'r', encoding='utf-8') as f:
+                    event = json.load(f)
+                    if event.get('session_id') == session_id:
+                        session_events.append(event)
+            except Exception:
+                continue
+    except Exception:
+        return {'errors': [], 'patterns': []}
+
+    if not session_events:
+        return {'errors': [], 'patterns': []}
+
+    # Summarize recent errors
+    return {
+        'errors': [
+            {
+                'category': e.get('error_category'),
+                'tool': e.get('tool_name'),
+                'severity': e.get('error_severity')
+            }
+            for e in session_events[-5:]  # Last 5 errors
+        ],
+        'patterns': []
+    }
+
 
 
 async def main():
@@ -56,11 +102,16 @@ async def main():
         # Load current playbook
         playbook = load_playbook()
 
+        # Get tool feedback (without deleting events)
+        session_id = input_data.get("session_id", "unknown")
+        tool_feedback = get_tool_feedback(session_id)
+
         # Extract new learnings and evaluate existing ones
         extraction_result = await extract_keypoints(
             messages,
             playbook,
-            "precompact_reflection"
+            "precompact_reflection",
+            feedback=tool_feedback
         )
 
         # Update playbook with results (using Delta mechanism)

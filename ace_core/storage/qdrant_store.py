@@ -5,6 +5,7 @@ Production-grade vector database integration
 
 import asyncio
 import sys
+import uuid
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 
@@ -57,7 +58,7 @@ class QdrantVectorStore:
         host: str = "localhost",
         port: int = 6333,
         collection_name: str = "playbook_strategies",
-        vector_size: int = 768,  # qwen3-embedding dimension
+        vector_size: int = 1024,  # qwen3-embedding:0.6b dimension
         prefer_grpc: bool = False
     ):
         """
@@ -195,11 +196,16 @@ class QdrantVectorStore:
             # Prepare points
             points = []
             for strategy, embedding in zip(strategies, embeddings):
+                # Generate UUID from strategy name for consistent ID
+                # This allows us to update the same strategy by name
+                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, strategy['name']))
+
                 points.append(
                     PointStruct(
-                        id=strategy['name'],  # Use strategy name as ID
+                        id=point_id,  # Use UUID as ID
                         vector=embedding,
                         payload={
+                            'name': strategy['name'],  # Store name in payload
                             'text': strategy['text'],
                             'score': strategy.get('score', 0),
                             'status': strategy.get('status', 'active'),
@@ -305,22 +311,25 @@ class QdrantVectorStore:
             self.stats['total_errors'] += 1
             raise
 
-    async def delete_strategies(self, strategy_ids: List[str]) -> int:
+    async def delete_strategies(self, strategy_names: List[str]) -> int:
         """
-        Delete strategies by IDs
+        Delete strategies by names
 
         Args:
-            strategy_ids: List of strategy IDs to delete
+            strategy_names: List of strategy names to delete
 
         Returns:
             Number of deleted strategies
         """
         try:
+            # Convert names to UUIDs
+            point_ids = [str(uuid.uuid5(uuid.NAMESPACE_DNS, name)) for name in strategy_names]
+
             await self.client.delete(
                 collection_name=self.collection_name,
-                points_selector=strategy_ids
+                points_selector=point_ids
             )
-            return len(strategy_ids)
+            return len(point_ids)
 
         except Exception as e:
             print(f"✗ Failed to delete strategies: {e}")
