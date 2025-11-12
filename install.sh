@@ -28,7 +28,8 @@ NC='\033[0m' # No Color
 
 # Configuration
 REPO_URL="https://github.com/Conansgithub/claude-ace"
-RAW_URL="https://raw.githubusercontent.com/Conansgithub/claude-ace/main"
+BRANCH="${BRANCH:-claude/install-claude-ace-011CUrNPVMX6x3femt4Wyba4}"
+RAW_URL="https://raw.githubusercontent.com/Conansgithub/claude-ace/${BRANCH}"
 INSTALL_DIR="${INSTALL_DIR:-$(pwd)}"
 FORCE="${FORCE:-false}"
 SKIP_HOOKS="${SKIP_HOOKS:-false}"
@@ -113,15 +114,15 @@ download_ace() {
     cd "$TEMP_DIR"
 
     if [ "$DOWNLOAD_METHOD" = "git" ]; then
-        # Use git clone
-        if ! git clone --depth 1 "$REPO_URL" claude-ace 2>&1; then
-            print_error "Failed to clone repository from $REPO_URL"
+        # Use git clone with specific branch
+        if ! git clone --depth 1 --branch "$BRANCH" "$REPO_URL" claude-ace 2>&1; then
+            print_error "Failed to clone repository from $REPO_URL (branch: $BRANCH)"
             print_info "Please check your internet connection and repository URL"
             exit 1
         fi
     else
         # Download as archive
-        ARCHIVE_URL="$REPO_URL/archive/refs/heads/main.zip"
+        ARCHIVE_URL="$REPO_URL/archive/refs/heads/${BRANCH}.zip"
 
         if [ "$DOWNLOAD_METHOD" = "curl" ]; then
             curl -fsSL "$ARCHIVE_URL" -o claude-ace.zip
@@ -142,7 +143,8 @@ download_ace() {
         fi
 
         unzip -q claude-ace.zip
-        mv claude-ace-main claude-ace
+        # Branch name may have slashes, so the extracted folder name is different
+        mv claude-ace-* claude-ace 2>/dev/null || true
     fi
 
     print_success "Downloaded Claude ACE"
