@@ -11,13 +11,6 @@ from common import (
     extract_keypoints, update_playbook_data
 )
 
-# Try to import vector store for index updates
-try:
-    from storage.vector_store import PlaybookVectorStore
-    VECTOR_STORE_AVAILABLE = True
-except ImportError:
-    VECTOR_STORE_AVAILABLE = False
-
 
 async def main():
     """Main entry point for precompact hook"""
@@ -55,15 +48,6 @@ async def main():
 
         # Save updated playbook
         save_playbook(playbook)
-
-        # Update vector index if available
-        if VECTOR_STORE_AVAILABLE:
-            try:
-                vector_store = PlaybookVectorStore()
-                indexed_count = vector_store.index_playbook(playbook)
-                print(f"✓ Vector index updated ({indexed_count} strategies)", file=sys.stderr)
-            except Exception as e:
-                print(f"Warning: Failed to update vector index: {e}", file=sys.stderr)
 
         new_count = len(extraction_result.get("new_key_points", []))
         eval_count = len(extraction_result.get("evaluations", []))
