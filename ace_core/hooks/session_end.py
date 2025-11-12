@@ -98,6 +98,7 @@ def process_tool_events(session_id: str) -> dict:
     return error_summary
 
 
+
 async def main():
     """Main entry point for session end hook"""
     try:

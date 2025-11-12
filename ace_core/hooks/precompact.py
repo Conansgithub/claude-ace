@@ -77,6 +77,7 @@ def get_tool_feedback(session_id: str) -> dict:
     }
 
 
+
 async def main():
     """Main entry point for precompact hook"""
     try:
