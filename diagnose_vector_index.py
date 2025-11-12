@@ -112,20 +112,21 @@ async def diagnose(playbook_path: str = None, project_dir: str = None):
         store = QdrantVectorStore(host='localhost', port=6333, collection_name='playbook_strategies')
         health = await store.health_check()
 
-        if health.get('connected'):
+        if health.get('status') == 'ok':
             print(f"✓ Qdrant connected")
-            print(f"   Status: {health.get('status')}")
+            print(f"   Status: {health.get('service', 'running')}")
 
             if health.get('collection_exists'):
+                collection_info = health.get('collection_info', {})
                 print(f"✓ Collection 'playbook_strategies' exists")
-                print(f"   Points count: {health.get('points_count', 0)}")
-                print(f"   Vector dimension: {health.get('vector_size', 'unknown')}")
+                print(f"   Points count: {collection_info.get('points_count', 0)}")
+                print(f"   Status: {collection_info.get('status', 'unknown')}")
             else:
                 print(f"⚠️  Collection 'playbook_strategies' does not exist")
                 print(f"   Will be created on first index")
         else:
             print(f"❌ Qdrant not connected")
-            print(f"   Error: {health.get('error')}")
+            print(f"   Error: {health.get('message', 'Unknown error')}")
             await store.close()
             return
 
@@ -137,17 +138,26 @@ async def diagnose(playbook_path: str = None, project_dir: str = None):
             async with OllamaEmbeddingClient() as embed_client:
                 embed_health = await embed_client.health_check()
 
-                if embed_health.get('connected'):
+                if embed_health.get('status') == 'ok' or embed_health.get('status') == 'warning':
                     print(f"✓ Ollama connected")
-                    print(f"   Model: {embed_health.get('model')}")
-                    print(f"   Vector dimension: {embed_health.get('dimension')}")
+                    print(f"   Status: {embed_health.get('service', 'running')}")
+                    print(f"   Model: {embed_client.model}")
+
+                    # Get vector dimension by testing
+                    test_embedding = await embed_client.embed_text("test")
+                    if test_embedding:
+                        print(f"   Vector dimension: {len(test_embedding)}")
+                    else:
+                        print(f"   ⚠️  Could not determine vector dimension")
                 else:
                     print(f"❌ Ollama not connected")
-                    print(f"   Error: {embed_health.get('error')}")
+                    print(f"   Error: {embed_health.get('message', 'Unknown error')}")
                     await store.close()
                     return
         except Exception as e:
             print(f"❌ Ollama check failed: {e}")
+            import traceback
+            traceback.print_exc()
             await store.close()
             return
 
@@ -172,8 +182,9 @@ async def diagnose(playbook_path: str = None, project_dir: str = None):
 
                 # Verify
                 health_after = await store.health_check()
+                collection_info = health_after.get('collection_info', {})
                 print(f"📊 Qdrant collection after indexing:")
-                print(f"   Points count: {health_after.get('points_count', 0)}")
+                print(f"   Points count: {collection_info.get('points_count', 0)}")
 
                 # Test search
                 print()
