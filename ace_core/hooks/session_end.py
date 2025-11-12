@@ -12,6 +12,19 @@ from common import (
 )
 
 
+def _run_async_safe(coro):
+    """Safely run async coroutine, handling existing event loops"""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # No event loop running, safe to use asyncio.run()
+        return asyncio.run(coro)
+    else:
+        # Event loop already running - shouldn't happen but handle it
+        print("Warning: Running in existing event loop context", file=sys.stderr)
+        return loop.run_until_complete(coro)
+
+
 async def main():
     """Main entry point for session end hook"""
     try:
@@ -67,7 +80,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        _run_async_safe(main())
     except KeyboardInterrupt:
         print("Session End hook interrupted", file=sys.stderr)
         sys.exit(1)
