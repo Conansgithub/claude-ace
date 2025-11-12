@@ -166,44 +166,44 @@ async def diagnose(playbook_path: str = None, project_dir: str = None):
         # 6. Try to index
         print("🚀 Attempting to index strategies...")
         try:
-            # Get embeddings
+            # Get embeddings and test search in same context
             texts = [kp['text'] for kp in active_strategies]
 
             async with OllamaEmbeddingClient() as embed_client:
                 results = await embed_client.embed_batch(texts)
                 embeddings = [r.embedding for r in results]
 
-            # Index
-            count = await store.index_strategies(active_strategies, embeddings)
+                # Index
+                count = await store.index_strategies(active_strategies, embeddings)
 
-            if count > 0:
-                print(f"✅ Successfully indexed {count} strategies!")
-                print()
+                if count > 0:
+                    print(f"✅ Successfully indexed {count} strategies!")
+                    print()
 
-                # Verify
-                health_after = await store.health_check()
-                collection_info = health_after.get('collection_info', {})
-                print(f"📊 Qdrant collection after indexing:")
-                print(f"   Points count: {collection_info.get('points_count', 0)}")
+                    # Verify
+                    health_after = await store.health_check()
+                    collection_info = health_after.get('collection_info', {})
+                    print(f"📊 Qdrant collection after indexing:")
+                    print(f"   Points count: {collection_info.get('points_count', 0)}")
 
-                # Test search
-                print()
-                print("🔍 Testing vector search...")
-                query_embedding = await embed_client.embed_text("handle errors")
-                search_results = await store.search(query_embedding, limit=3)
+                    # Test search (within same async context to reuse session)
+                    print()
+                    print("🔍 Testing vector search...")
+                    query_embedding = await embed_client.embed_text("handle errors")
+                    search_results = await store.search(query_embedding, limit=3)
 
-                if search_results:
-                    print(f"✓ Search working! Found {len(search_results)} results:")
-                    for i, result in enumerate(search_results, 1):
-                        name = result.payload.get('name', 'unknown')
-                        text = result.payload.get('text', '')[:60]
-                        score = result.score
-                        print(f"   {i}. [{name}] (score: {score:.3f})")
-                        print(f"      {text}...")
+                    if search_results:
+                        print(f"✓ Search working! Found {len(search_results)} results:")
+                        for i, result in enumerate(search_results, 1):
+                            name = result.metadata.get('name', 'unknown')
+                            text = result.text[:60] if len(result.text) > 60 else result.text
+                            score = result.score
+                            print(f"   {i}. [{name}] (score: {score:.3f})")
+                            print(f"      {text}...")
+                    else:
+                        print(f"⚠️  Search returned no results")
                 else:
-                    print(f"⚠️  Search returned no results")
-            else:
-                print(f"❌ Indexing failed (returned 0 count)")
+                    print(f"❌ Indexing failed (returned 0 count)")
 
         except Exception as e:
             print(f"❌ Indexing failed: {e}")
